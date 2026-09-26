@@ -1,0 +1,53 @@
+name: Build Windows Executable
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build ${{ matrix.builder }}
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - builder: win32-x86
+            platform_target: x86
+            output_path: 'bin\Release\win32-x86\'
+          - builder: win64-x86_64
+            platform_target: x64
+            output_path: 'bin\Release\win64-x86_64\'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up NuGet
+        uses: NuGet/setup-nuget@v2
+
+      - name: Set up MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Install .NET Framework 4.6.1 Developer Pack
+        run: choco install netfx-4.6.1-devpack -y --no-progress
+
+      - name: Restore dependencies
+        run: nuget restore PacketTracerPatcher.csproj
+
+      - name: Build Release executable (${{ matrix.builder }})
+        run: msbuild PacketTracerPatcher.csproj /p:Configuration=Release /p:Platform=AnyCPU /p:PlatformTarget=${{ matrix.platform_target }} /p:OutputPath="${{ matrix.output_path }}" /m
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: PacketTracerPatcher-${{ matrix.builder }}-executable
+          path: |
+            ${{ matrix.output_path }}*.exe
+            ${{ matrix.output_path }}*.pdb
+            ${{ matrix.output_path }}*.config
+          if-no-files-found: error
