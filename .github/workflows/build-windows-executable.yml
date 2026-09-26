@@ -33,6 +33,9 @@ jobs:
       - name: Set up MSBuild
         uses: microsoft/setup-msbuild@v2
 
+      - name: Install .NET Framework 4.6.1 Developer Pack
+        run: choco install netfx-4.6.1-devpack -y --no-progress
+
       - name: Restore dependencies
         run: nuget restore PacketTracerPatcher.csproj
 
