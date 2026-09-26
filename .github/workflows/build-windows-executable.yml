@@ -10,7 +10,18 @@ permissions:
 
 jobs:
   build:
+    name: Build ${{ matrix.builder }}
     runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - builder: win32-x86
+            platform_target: x86
+            output_path: 'bin\Release\win32-x86\'
+          - builder: win64-x86_64
+            platform_target: x64
+            output_path: 'bin\Release\win64-x86_64\'
 
     steps:
       - name: Checkout repository
@@ -25,15 +36,15 @@ jobs:
       - name: Restore dependencies
         run: nuget restore PacketTracerPatcher.csproj
 
-      - name: Build Release executable
-        run: msbuild PacketTracerPatcher.csproj /p:Configuration=Release /p:Platform="Any CPU" /m
+      - name: Build Release executable (${{ matrix.builder }})
+        run: msbuild PacketTracerPatcher.csproj /p:Configuration=Release /p:Platform=AnyCPU /p:PlatformTarget=${{ matrix.platform_target }} /p:OutputPath="${{ matrix.output_path }}" /m
 
       - name: Upload build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: PacketTracerPatcher-windows-executable
+          name: PacketTracerPatcher-${{ matrix.builder }}-executable
           path: |
-            bin/Release/*.exe
-            bin/Release/*.pdb
-            bin/Release/*.config
+            ${{ matrix.output_path }}*.exe
+            ${{ matrix.output_path }}*.pdb
+            ${{ matrix.output_path }}*.config
           if-no-files-found: error
